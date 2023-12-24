@@ -4,7 +4,6 @@ Keyboard::~Keyboard()
 {
 }
 
-
 bool Keyboard::KeyIsPressed(unsigned char keycode) const noexcept
 {
 	return keystates[keycode];
