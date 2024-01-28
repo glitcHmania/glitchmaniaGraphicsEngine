@@ -140,6 +140,7 @@
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="GGException.cpp" />
     <ClCompile Include="GGTimer.cpp" />
+    <ClCompile Include="Graphics.cpp" />
     <ClCompile Include="Keyboard.cpp" />
     <ClCompile Include="Mouse.cpp" />
     <ClCompile Include="Window.cpp" />
@@ -150,6 +151,7 @@
     <ClInclude Include="Application.h" />
     <ClInclude Include="GGException.h" />
     <ClInclude Include="GGTimer.h" />
+    <ClInclude Include="Graphics.h" />
     <ClInclude Include="Keyboard.h" />
     <ClInclude Include="Mouse.h" />
     <ClInclude Include="resource.h" />

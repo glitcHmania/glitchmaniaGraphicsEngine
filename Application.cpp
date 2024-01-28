@@ -22,5 +22,6 @@ int Application::Run()
 
 void Application::ComposeFrame()
 {
-	//TODO Game Logic
+	window.Gfx().ClearBuffer(1.0f, 0.0f, 0.0f);
+	window.Gfx().EndFrame();
 }

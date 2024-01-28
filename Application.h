@@ -10,6 +10,7 @@ public:
 
 private:
 	void ComposeFrame();
+	
 
 private:
 	Window window;
