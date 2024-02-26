@@ -1,5 +1,4 @@
 #include "Graphics.h"
-#include <wrl.h>
 #include <sstream>
 #include "Window.h"
 #include "dxerr.h"
@@ -65,18 +64,10 @@ Graphics::Graphics(HWND hWnd)
 		&pContext // pointer to device context interface
 	));
 
-	ID3D11Resource* pBackBuffer = nullptr; // pointer to back buffer
-	GFX_THROW_INFO(pSwap->GetBuffer(0, __uuidof(ID3D11Resource), reinterpret_cast<void**>(&pBackBuffer))); // fill the pointer with the back buffer
-	GFX_THROW_INFO(pDevice->CreateRenderTargetView(pBackBuffer, nullptr, &pRenderTarget)); // create render target view using the back buffer
+	Microsoft::WRL::ComPtr<ID3D11Resource> pBackBuffer = nullptr; // pointer to back buffer
+	GFX_THROW_INFO(pSwap->GetBuffer(0, __uuidof(ID3D11Resource), &pBackBuffer)); // fill the pointer with the back buffer
+	GFX_THROW_INFO(pDevice->CreateRenderTargetView(pBackBuffer.Get(), nullptr, &pRenderTarget)); // create render target view using the back buffer
 
-}
-
-Graphics::~Graphics()
-{
-	if (pContext != nullptr) pContext->Release();
-	if (pSwap != nullptr) pSwap->Release();
-	if (pDevice != nullptr) pDevice->Release();
-	if (pRenderTarget != nullptr) pRenderTarget->Release();
 }
 
 void Graphics::EndFrame()
@@ -101,7 +92,7 @@ void Graphics::EndFrame()
 void Graphics::ClearBuffer(float red, float green, float blue) noexcept
 {
 	const float color[] = { red, green, blue, 1.0f };
-	pContext->ClearRenderTargetView(pRenderTarget, color);
+	pContext->ClearRenderTargetView(pRenderTarget.Get(), color);
 }
 
 // Graphics exceptions
