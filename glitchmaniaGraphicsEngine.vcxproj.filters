@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="DxErr">
+      <UniqueIdentifier>{b4d2b8cc-2add-4759-bc35-5902770d65ab}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WinMain.cpp">
@@ -44,6 +47,9 @@
     </ClCompile>
     <ClCompile Include="DxgiInfoManager.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="dxerr.cpp">
+      <Filter>DxErr</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -80,6 +86,9 @@
     <ClInclude Include="DxgiInfoManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="dxerr.h">
+      <Filter>DxErr</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="glitchmaniaGraphicsEngine.rc">
@@ -93,5 +102,16 @@
     <Image Include="glitch32.ico">
       <Filter>Resource Files</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="DXGetErrorDescription.inl">
+      <Filter>DxErr</Filter>
+    </None>
+    <None Include="DXGetErrorString.inl">
+      <Filter>DxErr</Filter>
+    </None>
+    <None Include="DXTrace.inl">
+      <Filter>DxErr</Filter>
+    </None>
   </ItemGroup>
 </Project>

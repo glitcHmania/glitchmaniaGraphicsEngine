@@ -2,6 +2,8 @@
 #include <d3d11.h>
 #include "WindowsMessageMap.h"
 #include "GGException.h"
+#include <vector>
+#include "DxgiInfoManager.h"
 
 class Graphics
 {
@@ -42,6 +44,10 @@ public:
 	void ClearBuffer(float red, float green, float blue) noexcept;
 
 private:
+#if !defined NDEBUG // if in debug mode create a dxgi info manager
+	DxgiInfoManager infoManager;
+#endif
+
 	ID3D11Device* pDevice = nullptr;
 	IDXGISwapChain* pSwap = nullptr;
 	ID3D11DeviceContext* pContext = nullptr;

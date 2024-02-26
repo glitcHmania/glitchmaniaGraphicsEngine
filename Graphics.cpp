@@ -2,15 +2,25 @@
 #include <wrl.h>
 #include <sstream>
 #include "Window.h"
-#include <errhandlingapi.h>
+#include "dxerr.h"
 #pragma comment(lib, "d3d11.lib")
-
 namespace wrl = Microsoft::WRL;
 
-#pragma comment(lib,"d3d11.lib")
+//graphics exception macros
+#define GFX_EXCEPT_NOINFO(hrcall) Graphics::HrException(__LINE__,__FILE__,(hrcall))
+#define GFX_THROW_NOINFO(hrcall) if( FAILED(hr = (hrcall)) ) throw GFX_EXCEPT_NOINFO(hr)
 
-#define GFX_THROW_FAILED(hrcall) if( FAILED(hr = (hrcall)) ) throw Graphics::HrException(__LINE__,__FILE__,hr)
-#define GFX_DEVICE_REMOVED_EXCEPT(hr) Graphics::DeviceRemovedException( __LINE__,__FILE__,(hr) )
+//graphics exception macros with dxgi info manager
+#if !defined NDEBUG
+#define GFX_EXCEPT(hrcall) Graphics::HrException(__LINE__,__FILE__,(hrcall),infoManager.GetMessages())
+#define GFX_THROW_INFO(hrcall) infoManager.Set(); if( FAILED(hr = (hrcall)) ) throw GFX_EXCEPT(hr)
+#define GFX_DEVICE_REMOVED_EXCEPT(hrcall) Graphics::DeviceRemovedException(__LINE__,__FILE__,(hrcall),infoManager.GetMessages())
+#else // release mode exception macros
+#define GFX_EXCEPT(hrcall) Graphics::HrException(__LINE__,__FILE__,(hrcall))
+#define GFX_THROW_INFO(hrcall) GFX_THROW_NOINFO(hrcall)
+#define GFX_DEVICE_REMOVED_EXCEPT(hrcall) Graphics::DeviceRemovedException(__LINE__,__FILE__,(hrcall))
+#endif
+
 
 
 Graphics::Graphics(HWND hWnd)
@@ -27,19 +37,24 @@ Graphics::Graphics(HWND hWnd)
 	swapChainDesc.SampleDesc.Quality = 0; 
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swapChainDesc.BufferCount = 1; // one back buffer
-	swapChainDesc.OutputWindow = (HWND)696969;
+	swapChainDesc.OutputWindow = hWnd;
 	swapChainDesc.Windowed = TRUE; // windowed mode
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD; 
 	swapChainDesc.Flags = 0;
 
+	UINT createDeviceFlags = 0u;
+#if !defined NDEBUG
+	createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+
 	//to check the results of d3d functions
 	HRESULT hr;
 
-	GFX_THROW_FAILED(D3D11CreateDeviceAndSwapChain(
+	GFX_THROW_INFO(D3D11CreateDeviceAndSwapChain(
 		nullptr, // using default adapter
 		D3D_DRIVER_TYPE_HARDWARE, // using hardware graphics driver
 		nullptr, // no software driver
-		D3D11_CREATE_DEVICE_DEBUG, // no flags
+		createDeviceFlags, // flags
 		nullptr, // using default feature level array
 		0, // use default feature level array size
 		D3D11_SDK_VERSION, // use default SDK version
@@ -51,8 +66,8 @@ Graphics::Graphics(HWND hWnd)
 	));
 
 	ID3D11Resource* pBackBuffer = nullptr; // pointer to back buffer
-	GFX_THROW_FAILED(pSwap->GetBuffer(0, __uuidof(ID3D11Resource), reinterpret_cast<void**>(&pBackBuffer))); // fill the pointer with the back buffer
-	GFX_THROW_FAILED(pDevice->CreateRenderTargetView(pBackBuffer, nullptr, &pRenderTarget)); // create render target view using the back buffer
+	GFX_THROW_INFO(pSwap->GetBuffer(0, __uuidof(ID3D11Resource), reinterpret_cast<void**>(&pBackBuffer))); // fill the pointer with the back buffer
+	GFX_THROW_INFO(pDevice->CreateRenderTargetView(pBackBuffer, nullptr, &pRenderTarget)); // create render target view using the back buffer
 
 }
 
@@ -67,6 +82,9 @@ Graphics::~Graphics()
 void Graphics::EndFrame()
 {
 	HRESULT hr;
+#if !defined NDEBUG
+	infoManager.Set();
+#endif
 	if (FAILED(hr = pSwap->Present(2u, 0u))) // half a second vsync wait time and no flags
 	{
 		if (hr == DXGI_ERROR_DEVICE_REMOVED)
@@ -75,7 +93,7 @@ void Graphics::EndFrame()
 		}
 		else
 		{
-			GFX_THROW_FAILED(hr);
+			GFX_EXCEPT(hr);
 		}
 	}
 }
@@ -124,7 +142,7 @@ const char* Graphics::HrException::what() const noexcept
 
 const char* Graphics::HrException::GetType() const noexcept
 {
-	return "Chili Graphics Exception";
+	return "Graphics Exception";
 }
 
 HRESULT Graphics::HrException::GetErrorCode() const noexcept
@@ -134,38 +152,7 @@ HRESULT Graphics::HrException::GetErrorCode() const noexcept
 
 std::string Graphics::HrException::GetErrorString() const noexcept
 {
-	LPVOID lpMsgBuf = LocalAlloc(LMEM_FIXED, 1024);
-	if (lpMsgBuf == NULL) {
-		// Handle memory allocation failure gracefully:
-		return "Failed to allocate memory for error message.";
-	}
-
-	// Use FORMAT_MESSAGE_ALLOCATE_BUFFER for automatic memory management:
-	DWORD dwCharsWritten = FormatMessage(
-		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL,
-		hr,
-		0,
-		(LPTSTR)lpMsgBuf,
-		0,
-		NULL
-	);
-
-	// Check for potential errors from FormatMessage:
-	if (dwCharsWritten == 0) {
-		// Handle error, e.g., log or rethrow with additional information:
-		auto lastError = GetLastError();
-		LocalFree(lpMsgBuf); // Free memory even on error
-		return "Failed to format error message. Last error: " + std::to_string(lastError);
-	}
-
-	// Use std::string directly to avoid unnecessary copying:
-	std::string errorStr = reinterpret_cast<const char*>(lpMsgBuf);
-
-	// Free the allocated buffer using LocalFree:
-	LocalFree(lpMsgBuf);
-
-	return errorStr;
+	return DXGetErrorString(hr);
 }
 
 std::string Graphics::HrException::GetErrorDescription() const noexcept
