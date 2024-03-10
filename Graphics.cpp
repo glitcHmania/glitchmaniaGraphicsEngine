@@ -2,7 +2,9 @@
 #include <sstream>
 #include "Window.h"
 #include "dxerr.h"
+#include <d3dcompiler.h>
 #pragma comment(lib, "d3d11.lib")
+#pragma comment(lib, "D3DCompiler.lib")
 namespace wrl = Microsoft::WRL;
 
 //graphics exception macros
@@ -13,6 +15,7 @@ namespace wrl = Microsoft::WRL;
 #if !defined NDEBUG
 #define GFX_EXCEPT(hrcall) Graphics::HrException(__LINE__,__FILE__,(hrcall),infoManager.GetMessages())
 #define GFX_THROW_INFO(hrcall) infoManager.Set(); if( FAILED(hr = (hrcall)) ) throw GFX_EXCEPT(hr)
+#define GFX_THROW_ONLY_INFO(call) infoManager.Set(); (call); auto msgs = infoManager.GetMessages(); if(!msgs.empty()) {throw Graphics::OnlyInfoException(__LINE__,__FILE__,msgs);}
 #define GFX_DEVICE_REMOVED_EXCEPT(hrcall) Graphics::DeviceRemovedException(__LINE__,__FILE__,(hrcall),infoManager.GetMessages())
 #else // release mode exception macros
 #define GFX_EXCEPT(hrcall) Graphics::HrException(__LINE__,__FILE__,(hrcall))
@@ -66,7 +69,15 @@ Graphics::Graphics(HWND hWnd)
 
 	Microsoft::WRL::ComPtr<ID3D11Resource> pBackBuffer = nullptr; // pointer to back buffer
 	GFX_THROW_INFO(pSwap->GetBuffer(0, __uuidof(ID3D11Resource), &pBackBuffer)); // fill the pointer with the back buffer
-	GFX_THROW_INFO(pDevice->CreateRenderTargetView(pBackBuffer.Get(), nullptr, &pRenderTarget)); // create render target view using the back buffer
+
+	//Creating a descriptor for render target view
+	D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+	memset(&rtvDesc, 0, sizeof(rtvDesc));
+	rtvDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+
+	//Creating the render target view
+	GFX_THROW_INFO(pDevice->CreateRenderTargetView(pBackBuffer.Get(),&rtvDesc, &pRenderTarget)); // create render target view using the back buffer
 
 }
 
@@ -93,6 +104,99 @@ void Graphics::ClearBuffer(float red, float green, float blue) noexcept
 {
 	const float color[] = { red, green, blue, 1.0f };
 	pContext->ClearRenderTargetView(pRenderTarget.Get(), color);
+}
+
+void Graphics::DrawTriangle()
+{
+	HRESULT hr;
+
+	//Creating the Vertex structure and setting the values
+	struct Vertex {
+		float x;
+		float y;
+	};
+	const Vertex vertices[] = {
+		{0.0f,0.5f},
+		{0.5f,-0.5f},
+		{-0.5f,-0.5f}
+	};
+
+	//Setting the primitive topology type for input assembler
+	pContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	//Creating the blob for loading the bytecodes for input layout, vertex shader and pixel shader
+	Microsoft::WRL::ComPtr<ID3DBlob> pBlobContents;
+
+	//Loading the pixel shader bytecode
+	D3DReadFileToBlob(L"PixelShader.cso", &pBlobContents);
+
+	//Creating and Setting the Pixel Shader
+	Microsoft::WRL::ComPtr<ID3D11PixelShader> pPixelShader;
+	GFX_THROW_INFO(pDevice->CreatePixelShader(pBlobContents->GetBufferPointer(), pBlobContents->GetBufferSize(), nullptr, &pPixelShader));
+	pContext->PSSetShader(pPixelShader.Get(), nullptr, 0u);
+
+	//Vertex Buffer Descriptor
+	D3D11_BUFFER_DESC bufferDesc{};
+	bufferDesc.ByteWidth = sizeof(vertices);
+	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	bufferDesc.BindFlags = 0u;
+	bufferDesc.CPUAccessFlags = 0u;
+	bufferDesc.MiscFlags = 0u;
+	bufferDesc.StructureByteStride = sizeof(Vertex);
+
+	//Vertex Buffer Subresource Data
+	D3D11_SUBRESOURCE_DATA subData{};
+	subData.pSysMem = vertices;
+
+	//Creating and Setting the Vertex Buffer
+	Microsoft::WRL::ComPtr<ID3D11Buffer> pVertexBuffers;
+	GFX_THROW_INFO(pDevice->CreateBuffer(&bufferDesc, &subData, &pVertexBuffers));
+	const UINT stride = sizeof(Vertex);
+	const UINT offset = 0u;
+	pContext->IASetVertexBuffers(0u, 1u, pVertexBuffers.GetAddressOf(), &stride, &offset);
+
+	//Loading the vertex shader bytecode
+	D3DReadFileToBlob(L"VertexShader.cso", &pBlobContents);
+
+	//Creating and Setting the Vertex Shader
+	Microsoft::WRL::ComPtr<ID3D11VertexShader> pVertexShader;
+	GFX_THROW_INFO(pDevice->CreateVertexShader(pBlobContents->GetBufferPointer(), pBlobContents->GetBufferSize(), nullptr, &pVertexShader));
+	pContext->VSSetShader(pVertexShader.Get(), nullptr, 0u);
+
+	//Creating the descriptor for input layout
+	const D3D11_INPUT_ELEMENT_DESC inputElementDesc[] =
+	{
+		{
+		"Position",
+		0u,
+		DXGI_FORMAT_R32G32_FLOAT,
+		0u,
+		0u,
+		D3D11_INPUT_PER_VERTEX_DATA,
+		0u
+		}
+	};
+
+	//Creating the input layout
+	Microsoft::WRL::ComPtr<ID3D11InputLayout> pInputLayout;
+	GFX_THROW_INFO(pDevice->CreateInputLayout(inputElementDesc, (UINT)std::size(inputElementDesc), pBlobContents->GetBufferPointer(), pBlobContents->GetBufferSize(), &pInputLayout));
+	pContext->IASetInputLayout(pInputLayout.Get());
+
+	//Creating viewport;
+	D3D11_VIEWPORT viewPort;
+	viewPort.TopLeftX = 0;
+	viewPort.TopLeftY = 0;
+	viewPort.Width = 800;
+	viewPort.Height = 600;
+	viewPort.MaxDepth = 1;
+	viewPort.MinDepth = 0;
+	pContext->RSSetViewports(1u, &viewPort);
+
+	//Creating and setting render targets
+	pContext->OMSetRenderTargets(1u, pRenderTarget.GetAddressOf(), nullptr);
+
+	//Drawing
+	GFX_THROW_ONLY_INFO(pContext->Draw((UINT)std::size(vertices), 0u));
 }
 
 // Graphics exceptions
@@ -133,7 +237,7 @@ const char* Graphics::HrException::what() const noexcept
 
 const char* Graphics::HrException::GetType() const noexcept
 {
-	return "Graphics Exception";
+	return "Graphics Hr Exception";
 }
 
 HRESULT Graphics::HrException::GetErrorCode() const noexcept
@@ -185,4 +289,42 @@ std::string Graphics::HrException::GetErrorInfo() const noexcept
 const char* Graphics::DeviceRemovedException::GetType() const noexcept
 {
 	return "Graphics Exception [Device Removed] (DXGI_ERROR_DEVICE_REMOVED)";
+}
+
+Graphics::OnlyInfoException::OnlyInfoException(int line, const char* file, std::vector<std::string> infoMsgs) noexcept
+	:
+	Exception(line, file)
+{
+	for (const auto& m : infoMsgs)
+	{
+		info += m;
+		info.push_back('\n');
+	}
+	if (!info.empty())
+	{
+		info.pop_back();
+	}
+}
+
+const char* Graphics::OnlyInfoException::what() const noexcept
+{
+	std::ostringstream oss;
+	oss << GetType() << std::endl;
+	if (!info.empty())
+	{
+		oss << "\n[Error Info]\n" << GetErrorInfo() << std::endl << std::endl;
+	}
+	oss << GetOrigin();
+	whatBuffer = oss.str();
+	return whatBuffer.c_str();
+}
+
+const char* Graphics::OnlyInfoException::GetType() const noexcept
+{
+	return "Graphics Only Info Exception";
+}
+
+std::string Graphics::OnlyInfoException::GetErrorInfo() const noexcept
+{
+	return info;
 }

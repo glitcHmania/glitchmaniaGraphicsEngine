@@ -22,6 +22,7 @@ int Application::Run()
 
 void Application::ComposeFrame()
 {
-	window.Gfx().ClearBuffer(1.0f, 0.0f, 0.0f);
+	window.Gfx().ClearBuffer(0.0f, 0.0f, 0.0f);
+	window.Gfx().DrawTriangle();
 	window.Gfx().EndFrame();
 }
