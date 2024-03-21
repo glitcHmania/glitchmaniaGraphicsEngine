@@ -1,5 +1,6 @@
 #include "Application.h"
 #include <ostream>
+#include "GGTimer.h"
 
 Application::Application()
 	:
@@ -22,7 +23,8 @@ int Application::Run()
 
 void Application::ComposeFrame()
 {
+	const float c = std::sin(timer.Peek()) /2.0f ;
 	window.Gfx().ClearBuffer(0.0f, 0.0f, 0.0f);
-	window.Gfx().DrawTriangle();
+	window.Gfx().DrawTriangle(c);
 	window.Gfx().EndFrame();
 }

@@ -106,7 +106,7 @@ void Graphics::ClearBuffer(float red, float green, float blue) noexcept
 	pContext->ClearRenderTargetView(pRenderTarget.Get(), color);
 }
 
-void Graphics::DrawTriangle()
+void Graphics::DrawTriangle(float angle)
 {
 	HRESULT hr;
 
@@ -184,6 +184,41 @@ void Graphics::DrawTriangle()
 	Microsoft::WRL::ComPtr<ID3D11Buffer> pIndexBuffer;
 	GFX_THROW_INFO(pDevice->CreateBuffer(&indexBD, &indexSD, &pIndexBuffer));
 	pContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0u);
+
+	//Defining the constant data for constant buffer
+	struct ConstantBuffer
+	{
+		struct tmat
+		{
+			float element[4][4];
+		} transformation;
+	};
+	const ConstantBuffer constBuf = {
+		{
+			(3.0f/4.0f)*std::cos(angle),	std::sin(angle), 0.0f, 0.0f,
+			(3.0f/4.0f)*-std::sin(angle),	std::cos(angle), 0.0f, 0.0f,
+			0.0f,							0.0f,			 1.0f, 0.0f,
+			0.0f,							0.0f,			 0.0f, 1.0f
+		}
+	};
+
+	//Creating constant buffer subresource data
+	D3D11_SUBRESOURCE_DATA constantSD = {};
+	constantSD.pSysMem = &constBuf;
+
+	//Creating constant buffer descriptor
+	D3D11_BUFFER_DESC constantBD = {};
+	constantBD.ByteWidth = sizeof(constBuf);
+	constantBD.Usage = D3D11_USAGE_DYNAMIC;
+	constantBD.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	constantBD.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	constantBD.MiscFlags = 0u;
+	constantBD.StructureByteStride = 0u;
+
+	//Creating and setting the constant buffer for transformation matrix
+	Microsoft::WRL::ComPtr<ID3D11Buffer> pConstantBuffer;
+	GFX_THROW_INFO(pDevice->CreateBuffer(&constantBD, &constantSD, &pConstantBuffer));
+	pContext->VSSetConstantBuffers(0u, 1u, pConstantBuffer.GetAddressOf());
 	
 	//Creating the blob for loading the bytecodes for input layout, vertex shader and pixel shader
 	Microsoft::WRL::ComPtr<ID3DBlob> pBlobContents;
@@ -191,7 +226,7 @@ void Graphics::DrawTriangle()
 	//Loading the pixel shader bytecode
 	D3DReadFileToBlob(L"PixelShader.cso", &pBlobContents);
 
-	//Creating and Setting the Pixel Shader
+	//Creating and Setting the pixel shader
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> pPixelShader;
 	GFX_THROW_INFO(pDevice->CreatePixelShader(pBlobContents->GetBufferPointer(), pBlobContents->GetBufferSize(), nullptr, &pPixelShader));
 	pContext->PSSetShader(pPixelShader.Get(), nullptr, 0u);
