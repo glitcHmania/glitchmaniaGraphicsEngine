@@ -3,6 +3,7 @@
 #include "Window.h"
 #include "dxerr.h"
 #include <d3dcompiler.h>
+#include <DirectXMath.h>
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "D3DCompiler.lib")
 namespace wrl = Microsoft::WRL;
@@ -27,6 +28,9 @@ namespace wrl = Microsoft::WRL;
 
 Graphics::Graphics(HWND hWnd)
 {
+	//to check the results of d3d functions
+	HRESULT hr;
+
 	DXGI_SWAP_CHAIN_DESC swapChainDesc = { 0 };
 	swapChainDesc.BufferDesc.Width = 0; // not specifying width and height. we'll use the window's dimensions
 	swapChainDesc.BufferDesc.Height = 0;
@@ -49,9 +53,7 @@ Graphics::Graphics(HWND hWnd)
 	createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 
-	//to check the results of d3d functions
-	HRESULT hr;
-
+	//Creating device and swap chain
 	GFX_THROW_INFO(D3D11CreateDeviceAndSwapChain(
 		nullptr, // using default adapter
 		D3D_DRIVER_TYPE_HARDWARE, // using hardware graphics driver
@@ -67,17 +69,47 @@ Graphics::Graphics(HWND hWnd)
 		&pContext // pointer to device context interface
 	));
 
+	//Getting a pointer for back buffer
 	Microsoft::WRL::ComPtr<ID3D11Resource> pBackBuffer = nullptr; // pointer to back buffer
 	GFX_THROW_INFO(pSwap->GetBuffer(0, __uuidof(ID3D11Resource), &pBackBuffer)); // fill the pointer with the back buffer
 
-	//Creating a descriptor for render target view
-	D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-	memset(&rtvDesc, 0, sizeof(rtvDesc));
-	rtvDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-	rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-
 	//Creating the render target view
-	GFX_THROW_INFO(pDevice->CreateRenderTargetView(pBackBuffer.Get(),&rtvDesc, &pRenderTarget)); // create render target view using the back buffer
+	GFX_THROW_INFO(pDevice->CreateRenderTargetView(pBackBuffer.Get(),nullptr, &pRenderTargetView)); // create render target view using the back buffer
+
+	//Creating and setting depth stencil state
+	D3D11_DEPTH_STENCIL_DESC dsDesc={};
+	dsDesc.DepthEnable = TRUE;
+	dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> pDepthStencilState;
+	GFX_THROW_INFO(pDevice->CreateDepthStencilState(&dsDesc, &pDepthStencilState));
+	pContext->OMSetDepthStencilState(pDepthStencilState.Get(), 1u);
+
+	//Creating and setting depth stencil texture
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> pDepthStencilTexture;
+	D3D11_TEXTURE2D_DESC descDepth={};
+	descDepth.Width = (UINT)800.0f;
+	descDepth.Height = (UINT)600.0f;
+	descDepth.MipLevels = 1u;
+	descDepth.ArraySize = 1u;
+	descDepth.Format = DXGI_FORMAT_D32_FLOAT;
+	descDepth.SampleDesc.Count = 1u;
+	descDepth.SampleDesc.Quality = 0u;
+	descDepth.Usage = D3D11_USAGE_DEFAULT;
+	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	GFX_THROW_INFO(pDevice->CreateTexture2D(&descDepth, nullptr, &pDepthStencilTexture));
+
+	//Creating depth stencil view desc
+	D3D11_DEPTH_STENCIL_VIEW_DESC descDSV = {};
+	descDSV.Format = DXGI_FORMAT_D32_FLOAT;
+	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	descDSV.Texture2D.MipSlice = 0u;
+
+	//Creating and setting the depth stencil view
+	GFX_THROW_INFO(pDevice->CreateDepthStencilView(pDepthStencilTexture.Get(), &descDSV, &pDepthStencilView));
+
+	//Setting the render target view and depth stencil view
+	pContext->OMSetRenderTargets(1u, pRenderTargetView.GetAddressOf(), pDepthStencilView.Get());
 
 }
 
@@ -103,10 +135,11 @@ void Graphics::EndFrame()
 void Graphics::ClearBuffer(float red, float green, float blue) noexcept
 {
 	const float color[] = { red, green, blue, 1.0f };
-	pContext->ClearRenderTargetView(pRenderTarget.Get(), color);
+	pContext->ClearRenderTargetView(pRenderTargetView.Get(), color);
+	pContext->ClearDepthStencilView(pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0u);
 }
 
-void Graphics::DrawTriangle(float angle)
+void Graphics::DrawTriangle(float angle, float msX, float msY)
 {
 	HRESULT hr;
 
@@ -117,22 +150,33 @@ void Graphics::DrawTriangle(float angle)
 	struct Vertex {
 		float x;
 		float y;
+		float z;
 		char r;
 		char g;
 		char b;
 		char a;
 	};
 	const Vertex vertices[] = {
-		{0.0f,0.6f,255,0,0,0},
-		{0.15f,0.2f,255,0,0,0},
-		{0.55f,0.2f,255,0,0,0},
-		{0.2f,-0.1f,0,255,0,0},
-		{0.4f,-0.6f,0,255,0,0},
-		{0.0f,-0.35f,0,255,0,0},
-		{-0.4f,-0.6f,0,255,0,0},
-		{-0.2f,-0.1f,0,0,255,0},
-		{-0.55f,0.2f,0,0,255,0},
-		{-0.15f,0.2f,0,0,255,0}
+	{0.0f	,0.6f	,-0.1f	,255,0	,0	,0},//0
+	{0.15f	,0.2f	,-0.1f	,255,0	,0	,0},//1
+	{0.55f	,0.2f	,-0.1f	,255,0	,0	,0},//2
+	{0.2f	,-0.1f	,-0.1f	,255,0	,0	,0},//3
+	{0.4f	,-0.6f	,-0.1f	,0	,255,0	,0},//4
+	{0.0f	,-0.35f	,-0.1f	,0	,255,0	,0},//5
+	{-0.4f	,-0.6f	,-0.1f	,0	,255,0	,0},//6
+	{-0.2f	,-0.1f	,-0.1f	,0	,0	,255,0},//7
+	{-0.55f	,0.2f	,-0.1f	,0	,0	,255,0},//8
+	{-0.15f	,0.2f	,-0.1f	,0	,0	,255,0},//9
+	{0.0f	,0.6f	,0.1f	,255,0	,0	,0},//10
+	{0.15f	,0.2f	,0.1f	,255,0	,0	,0},//11
+	{0.55f	,0.2f	,0.1f	,255,0	,0	,0},//12
+	{0.2f	,-0.1f	,0.1f	,255,0	,0	,0},//13
+	{0.4f	,-0.6f	,0.1f	,0	,255,0	,0},//14
+	{0.0f	,-0.35f	,0.1f	,0	,255,0	,0},//15
+	{-0.4f	,-0.6f	,0.1f	,0	,255,0	,0},//16
+	{-0.2f	,-0.1f	,0.1f	,0	,0	,255,0},//17
+	{-0.55f	,0.2f	,0.1f	,0	,0	,255,0},//18
+	{-0.15f	,0.2f	,0.1f	,0	,0	,255,0}//19
 	};
 
 	//Vertex buffer subresource data
@@ -157,14 +201,32 @@ void Graphics::DrawTriangle(float angle)
 
 	//Setting the index values
 	const unsigned short indices[] = {
-		0,1,9,
-		1,2,3,
-		3,4,5,
-		5,6,7,
-		7,8,9,
-		9,5,7,
-		1,3,5,
-		9,1,5
+	0,1,9,//front face
+	1,2,3,
+	3,4,5,
+	5,6,7,
+	7,8,9,
+	9,5,7,
+	1,3,5,
+	9,1,5,
+	11,10,19,//back face
+	13,12,11,
+	15,14,13,
+	17,16,15,
+	19,18,17,
+	19,17,15,
+	11,15,13,
+	19,15,11,
+	19,10,0,	19,0,9, // sides
+	11,0,10,	11,1,0,
+	11,12,1,	2,1,12,
+	3,2,12,		3,12,13,
+	4,3,13,		13,14,4,
+	14,5,4,		14,15,5,
+	6,5,15,		6,15,16,
+	6,16,7,		16,17,7,
+	8,7,17,		17,18,8,
+	19,9,8,		18,19,8
 	};
 
 	//Index buffer subresource data
@@ -186,20 +248,20 @@ void Graphics::DrawTriangle(float angle)
 	pContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0u);
 
 	//Defining the constant data for constant buffer
+
 	struct ConstantBuffer
 	{
-		struct tmat
-		{
-			float element[4][4];
-		} transformation;
+		DirectX::XMMATRIX transformation;
 	};
-	const ConstantBuffer constBuf = {
-		{
-			(3.0f/4.0f)*std::cos(angle),	std::sin(angle), 0.0f, 0.0f,
-			(3.0f/4.0f)*-std::sin(angle),	std::cos(angle), 0.0f, 0.0f,
-			0.0f,							0.0f,			 1.0f, 0.0f,
-			0.0f,							0.0f,			 0.0f, 1.0f
-		}
+	const ConstantBuffer constBuf =
+	{
+		DirectX::XMMatrixTranspose( 
+			DirectX::XMMatrixRotationY(angle)*
+			//DirectX::XMMatrixRotationZ(angle) * 
+			DirectX::XMMatrixScaling(3.0f / 4.0f,1.0f,1.0f) *
+			DirectX::XMMatrixTranslation(msX, msY, 1.3f) *
+			DirectX::XMMatrixPerspectiveLH(1.0f,1.0f,0.5f,10.0f)
+		)
 	};
 
 	//Creating constant buffer subresource data
@@ -242,8 +304,8 @@ void Graphics::DrawTriangle(float angle)
 	//Creating the descriptor for input layout
 	const D3D11_INPUT_ELEMENT_DESC inputElementDesc[] =
 	{
-		{"Position",0u,DXGI_FORMAT_R32G32_FLOAT,0u,0u,D3D11_INPUT_PER_VERTEX_DATA,0u},
-		{"Color",0u,DXGI_FORMAT_R8G8B8A8_UNORM,0u,8u,D3D11_INPUT_PER_VERTEX_DATA,0u}
+		{"Position",0u,DXGI_FORMAT_R32G32B32_FLOAT,0u,0u,D3D11_INPUT_PER_VERTEX_DATA,0u},
+		{"Color",0u,DXGI_FORMAT_R8G8B8A8_UNORM,0u,D3D11_APPEND_ALIGNED_ELEMENT,D3D11_INPUT_PER_VERTEX_DATA,0u}
 	};
 
 	//Creating the input layout
@@ -260,9 +322,6 @@ void Graphics::DrawTriangle(float angle)
 	viewPort.MaxDepth = 1;
 	viewPort.MinDepth = 0;
 	pContext->RSSetViewports(1u, &viewPort);
-
-	//Creating and setting render targets
-	pContext->OMSetRenderTargets(1u, pRenderTarget.GetAddressOf(), nullptr);
 
 	//Drawing
 	GFX_THROW_ONLY_INFO( pContext->DrawIndexed((UINT)std::size(indices),0u,0u) );

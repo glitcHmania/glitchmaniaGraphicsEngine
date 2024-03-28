@@ -53,7 +53,7 @@ public:
 
 	void EndFrame();
 	void ClearBuffer(float red, float green, float blue) noexcept;
-	void DrawTriangle(float angle);
+	void DrawTriangle(float angle, float msX, float msY);
 
 private:
 #if !defined NDEBUG // if in debug mode create a dxgi info manager
@@ -63,6 +63,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Device> pDevice;
 	Microsoft::WRL::ComPtr<IDXGISwapChain> pSwap;
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> pContext;
-	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> pRenderTarget;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> pRenderTargetView;
+	Microsoft::WRL::ComPtr <ID3D11DepthStencilView> pDepthStencilView;
 };
 

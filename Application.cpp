@@ -2,6 +2,7 @@
 #include <ostream>
 #include "GGTimer.h"
 
+
 Application::Application()
 	:
 	window(800, 600, "Glitchmania Graphics Engine")
@@ -25,6 +26,6 @@ void Application::ComposeFrame()
 {
 	const float c = std::sin(timer.Peek()) /2.0f ;
 	window.Gfx().ClearBuffer(0.0f, 0.0f, 0.0f);
-	window.Gfx().DrawTriangle(c);
+	window.Gfx().DrawTriangle(timer.Peek(), window.mouse.GetPosX() / 400.0f - 1, window.mouse.GetPosY() / -300.0f +1 );
 	window.Gfx().EndFrame();
 }
