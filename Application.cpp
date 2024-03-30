@@ -24,8 +24,38 @@ int Application::Run()
 
 void Application::ComposeFrame()
 {
+	float rotAmount = 0.05f;
+	float movAmount = 0.1f;
+
+	if (window.kbd.KeyIsPressed(0x41))
+	{
+		rotY += rotAmount;
+	}
+	else if (window.kbd.KeyIsPressed(0x44))
+	{
+		rotY -= rotAmount;
+	}
+	if (window.kbd.KeyIsPressed(0x57))
+	{
+		rotX += rotAmount;
+	}
+	else if (window.kbd.KeyIsPressed(0x53))
+	{
+		rotX -= rotAmount;
+	}
+
+	auto msEvent = window.mouse.Read().GetType();
+	if (msEvent == Mouse::Event::Type::WheelDown)
+	{
+		posZ -= movAmount;
+	}
+	else if (msEvent == Mouse::Event::Type::WheelUp)
+	{
+		posZ += movAmount;
+	}
+
 	const float c = std::sin(timer.Peek()) /2.0f ;
 	window.Gfx().ClearBuffer(0.0f, 0.0f, 0.0f);
-	window.Gfx().DrawTriangle(timer.Peek(), window.mouse.GetPosX() / 400.0f - 1, window.mouse.GetPosY() / -300.0f +1 );
+	window.Gfx().DrawTriangle(rotX, rotY, window.mouse.GetPosX() / 400.0f - 1, window.mouse.GetPosY() / -300.0f +1, posZ);
 	window.Gfx().EndFrame();
 }

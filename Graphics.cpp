@@ -28,9 +28,10 @@ namespace wrl = Microsoft::WRL;
 
 Graphics::Graphics(HWND hWnd)
 {
-	//to check the results of d3d functions
+	//To check the results of d3d functions
 	HRESULT hr;
 
+	//Creating the descriptor for swap chain
 	DXGI_SWAP_CHAIN_DESC swapChainDesc = { 0 };
 	swapChainDesc.BufferDesc.Width = 0; // not specifying width and height. we'll use the window's dimensions
 	swapChainDesc.BufferDesc.Height = 0;
@@ -139,7 +140,7 @@ void Graphics::ClearBuffer(float red, float green, float blue) noexcept
 	pContext->ClearDepthStencilView(pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0u);
 }
 
-void Graphics::DrawTriangle(float angle, float msX, float msY)
+void Graphics::DrawTriangle(float rotX, float rotY, float msX, float msY, float msZ)
 {
 	HRESULT hr;
 
@@ -151,32 +152,28 @@ void Graphics::DrawTriangle(float angle, float msX, float msY)
 		float x;
 		float y;
 		float z;
-		char r;
-		char g;
-		char b;
-		char a;
 	};
 	const Vertex vertices[] = {
-	{0.0f	,0.6f	,-0.1f	,255,0	,0	,0},//0
-	{0.15f	,0.2f	,-0.1f	,255,0	,0	,0},//1
-	{0.55f	,0.2f	,-0.1f	,255,0	,0	,0},//2
-	{0.2f	,-0.1f	,-0.1f	,255,0	,0	,0},//3
-	{0.4f	,-0.6f	,-0.1f	,0	,255,0	,0},//4
-	{0.0f	,-0.35f	,-0.1f	,0	,255,0	,0},//5
-	{-0.4f	,-0.6f	,-0.1f	,0	,255,0	,0},//6
-	{-0.2f	,-0.1f	,-0.1f	,0	,0	,255,0},//7
-	{-0.55f	,0.2f	,-0.1f	,0	,0	,255,0},//8
-	{-0.15f	,0.2f	,-0.1f	,0	,0	,255,0},//9
-	{0.0f	,0.6f	,0.1f	,255,0	,0	,0},//10
-	{0.15f	,0.2f	,0.1f	,255,0	,0	,0},//11
-	{0.55f	,0.2f	,0.1f	,255,0	,0	,0},//12
-	{0.2f	,-0.1f	,0.1f	,255,0	,0	,0},//13
-	{0.4f	,-0.6f	,0.1f	,0	,255,0	,0},//14
-	{0.0f	,-0.35f	,0.1f	,0	,255,0	,0},//15
-	{-0.4f	,-0.6f	,0.1f	,0	,255,0	,0},//16
-	{-0.2f	,-0.1f	,0.1f	,0	,0	,255,0},//17
-	{-0.55f	,0.2f	,0.1f	,0	,0	,255,0},//18
-	{-0.15f	,0.2f	,0.1f	,0	,0	,255,0}//19
+	{0.0f	,0.6f	,-0.1f},//0
+	{0.15f	,0.2f	,-0.1f},//1
+	{0.55f	,0.2f	,-0.1f},//2
+	{0.2f	,-0.1f	,-0.1f},//3
+	{0.4f	,-0.6f	,-0.1f},//4
+	{0.0f	,-0.35f	,-0.1f},//5
+	{-0.4f	,-0.6f	,-0.1f},//6
+	{-0.2f	,-0.1f	,-0.1f},//7
+	{-0.55f	,0.2f	,-0.1f},//8
+	{-0.15f	,0.2f	,-0.1f},//9
+	{0.0f	,0.6f	,0.1f},//10
+	{0.15f	,0.2f	,0.1f},//11
+	{0.55f	,0.2f	,0.1f},//12
+	{0.2f	,-0.1f	,0.1f},//13
+	{0.4f	,-0.6f	,0.1f},//14
+	{0.0f	,-0.35f	,0.1f},//15
+	{-0.4f	,-0.6f	,0.1f},//16
+	{-0.2f	,-0.1f	,0.1f},//17
+	{-0.55f	,0.2f	,0.1f},//18
+	{-0.15f	,0.2f	,0.1f} //19
 	};
 
 	//Vertex buffer subresource data
@@ -247,8 +244,7 @@ void Graphics::DrawTriangle(float angle, float msX, float msY)
 	GFX_THROW_INFO(pDevice->CreateBuffer(&indexBD, &indexSD, &pIndexBuffer));
 	pContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0u);
 
-	//Defining the constant data for constant buffer
-
+	//Defining the constant data for transformation constant buffer
 	struct ConstantBuffer
 	{
 		DirectX::XMMATRIX transformation;
@@ -256,14 +252,38 @@ void Graphics::DrawTriangle(float angle, float msX, float msY)
 	const ConstantBuffer constBuf =
 	{
 		DirectX::XMMatrixTranspose( 
-			DirectX::XMMatrixRotationY(angle)*
-			//DirectX::XMMatrixRotationZ(angle) * 
+			DirectX::XMMatrixRotationY(rotY)*
+			DirectX::XMMatrixRotationX(rotX) * 
 			DirectX::XMMatrixScaling(3.0f / 4.0f,1.0f,1.0f) *
-			DirectX::XMMatrixTranslation(msX, msY, 1.3f) *
+			DirectX::XMMatrixTranslation(msX, msY, msZ) *
 			DirectX::XMMatrixPerspectiveLH(1.0f,1.0f,0.5f,10.0f)
 		)
 	};
 
+	//Constant data for color constant buffer
+	struct ConstantBuffer2
+	{
+		struct color
+		{
+			float r;
+			float g;
+			float b;
+			float a;
+		} colors[5];
+	};
+
+	const ConstantBuffer2 constBuf2 =
+	{
+		{
+			{1.0f,0.0f,0.0f,1.0f},
+			{0.0f,0.0f,1.0f,1.0f},
+			{1.0f,0.0f,1.0f,1.0f},
+			{1.0f,0.0f,1.0f,1.0f},
+			{1.0f,0.0f,1.0f,1.0f}
+		}
+	};
+
+		//Transformation Constant Buffer
 	//Creating constant buffer subresource data
 	D3D11_SUBRESOURCE_DATA constantSD = {};
 	constantSD.pSysMem = &constBuf;
@@ -281,6 +301,25 @@ void Graphics::DrawTriangle(float angle, float msX, float msY)
 	Microsoft::WRL::ComPtr<ID3D11Buffer> pConstantBuffer;
 	GFX_THROW_INFO(pDevice->CreateBuffer(&constantBD, &constantSD, &pConstantBuffer));
 	pContext->VSSetConstantBuffers(0u, 1u, pConstantBuffer.GetAddressOf());
+
+		//Color Constant Buffer
+	//Creating constant buffer subresource data
+	D3D11_SUBRESOURCE_DATA constantSD2 = {};
+	constantSD2.pSysMem = &constBuf2;
+
+	//Creating constant buffer descriptor
+	D3D11_BUFFER_DESC constantBD2 = {};
+	constantBD2.ByteWidth = sizeof(constBuf2);
+	constantBD2.Usage = D3D11_USAGE_DYNAMIC;
+	constantBD2.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	constantBD2.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	constantBD2.MiscFlags = 0u;
+	constantBD2.StructureByteStride = 0u;
+
+	//Creating and setting the constant buffer for transformation matrix
+	Microsoft::WRL::ComPtr<ID3D11Buffer> pConstantBuffer2;
+	GFX_THROW_INFO(pDevice->CreateBuffer(&constantBD2, &constantSD2, &pConstantBuffer2));
+	pContext->PSSetConstantBuffers(0u, 1u, pConstantBuffer2.GetAddressOf());
 	
 	//Creating the blob for loading the bytecodes for input layout, vertex shader and pixel shader
 	Microsoft::WRL::ComPtr<ID3DBlob> pBlobContents;
@@ -304,8 +343,7 @@ void Graphics::DrawTriangle(float angle, float msX, float msY)
 	//Creating the descriptor for input layout
 	const D3D11_INPUT_ELEMENT_DESC inputElementDesc[] =
 	{
-		{"Position",0u,DXGI_FORMAT_R32G32B32_FLOAT,0u,0u,D3D11_INPUT_PER_VERTEX_DATA,0u},
-		{"Color",0u,DXGI_FORMAT_R8G8B8A8_UNORM,0u,D3D11_APPEND_ALIGNED_ELEMENT,D3D11_INPUT_PER_VERTEX_DATA,0u}
+		{"Position",0u,DXGI_FORMAT_R32G32B32_FLOAT,0u,0u,D3D11_INPUT_PER_VERTEX_DATA,0u}
 	};
 
 	//Creating the input layout

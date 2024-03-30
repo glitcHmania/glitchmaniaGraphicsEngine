@@ -53,7 +53,7 @@ public:
 
 	void EndFrame();
 	void ClearBuffer(float red, float green, float blue) noexcept;
-	void DrawTriangle(float angle, float msX, float msY);
+	void DrawTriangle(float rotX, float rotY, float msX, float msY, float msZ);
 
 private:
 #if !defined NDEBUG // if in debug mode create a dxgi info manager
