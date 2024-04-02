@@ -159,26 +159,29 @@ void Graphics::DrawTriangle(float posX, float posY, float posZ, float rotX, floa
 		float z;
 	};
 	const Vertex vertices[] = {
-	{0.0f	,0.6f	,-0.1f},//0
-	{0.15f	,0.2f	,-0.1f},//1
-	{0.55f	,0.2f	,-0.1f},//2
-	{0.2f	,-0.1f	,-0.1f},//3
-	{0.4f	,-0.6f	,-0.1f},//4
-	{0.0f	,-0.35f	,-0.1f},//5
-	{-0.4f	,-0.6f	,-0.1f},//6
-	{-0.2f	,-0.1f	,-0.1f},//7
-	{-0.55f	,0.2f	,-0.1f},//8
-	{-0.15f	,0.2f	,-0.1f},//9
-	{0.0f	,0.6f	,0.1f},//10
-	{0.15f	,0.2f	,0.1f},//11
-	{0.55f	,0.2f	,0.1f},//12
-	{0.2f	,-0.1f	,0.1f},//13
-	{0.4f	,-0.6f	,0.1f},//14
-	{0.0f	,-0.35f	,0.1f},//15
-	{-0.4f	,-0.6f	,0.1f},//16
-	{-0.2f	,-0.1f	,0.1f},//17
-	{-0.55f	,0.2f	,0.1f},//18
-	{-0.15f	,0.2f	,0.1f} //19
+	//Front face
+	{0.0f	,0.8f	,-0.12f},//0
+	{0.192f ,0.192f	,-0.12f},//1
+	{0.8f	,0.192f	,-0.12f},//2
+	{0.312f ,-0.208f,-0.12f},//3
+	{0.488f ,-0.8f	,-0.12f},//4
+	{0.0f	,-0.424f,-0.12f},//5
+	{-0.488f,-0.8f	,-0.12f},//6
+	{-0.312f,-0.208f,-0.12f},//7
+	{-0.8f	,0.192f	,-0.12f},//8
+	{-0.192f,0.192f	,-0.12f},//9
+
+	//Back face
+	{0.0f	,0.8f	,0.12f},//10
+	{0.192f ,0.192f	,0.12f},//11
+	{0.8f	,0.192f	,0.12f},//12
+	{0.312f ,-0.208f,0.12f},//13
+	{0.488f ,-0.8f	,0.12f},//14
+	{0.0f	,-0.424f,0.12f},//15
+	{-0.488f,-0.8f	,0.12f},//16
+	{-0.312f,-0.208f,0.12f},//17
+	{-0.8f	,0.192f	,0.12f},//18
+	{-0.192f,0.192f	,0.12f} //19
 	};
 
 	//Vertex buffer subresource data
@@ -261,7 +264,7 @@ void Graphics::DrawTriangle(float posX, float posY, float posZ, float rotX, floa
 			DirectX::XMMatrixRotationX(rotX) * 
 			DirectX::XMMatrixScaling(3.0f / 4.0f,1.0f,1.0f) *
 			DirectX::XMMatrixTranslation(posX, posY, posZ) *
-			DirectX::XMMatrixPerspectiveLH(1.0f,1.0f,0.5f,10.0f)
+			DirectX::XMMatrixPerspectiveLH(1.0f,1.0f,0.5f,10.0f) //FOV
 		)
 	};
 
