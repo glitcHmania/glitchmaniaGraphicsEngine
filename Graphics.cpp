@@ -35,7 +35,7 @@ Graphics::Graphics(HWND hWnd)
 	DXGI_SWAP_CHAIN_DESC swapChainDesc = { 0 };
 	swapChainDesc.BufferDesc.Width = 0; // not specifying width and height. we'll use the window's dimensions
 	swapChainDesc.BufferDesc.Height = 0;
-	swapChainDesc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM; // 32 bit color
+	swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT; // 32 bit color
 	swapChainDesc.BufferDesc.RefreshRate.Numerator = 0; // not specifying refresh rate. we'll use the default
 	swapChainDesc.BufferDesc.RefreshRate.Denominator = 0;
 	swapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED; // no scaling required because width and height are not specified
@@ -73,6 +73,11 @@ Graphics::Graphics(HWND hWnd)
 	//Getting a pointer for back buffer
 	Microsoft::WRL::ComPtr<ID3D11Resource> pBackBuffer = nullptr; // pointer to back buffer
 	GFX_THROW_INFO(pSwap->GetBuffer(0, __uuidof(ID3D11Resource), &pBackBuffer)); // fill the pointer with the back buffer
+
+	//Creating render target view descriptor
+	//D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+	//rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+	//rtvDesc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 
 	//Creating the render target view
 	GFX_THROW_INFO(pDevice->CreateRenderTargetView(pBackBuffer.Get(),nullptr, &pRenderTargetView)); // create render target view using the back buffer
@@ -140,7 +145,7 @@ void Graphics::ClearBuffer(float red, float green, float blue) noexcept
 	pContext->ClearDepthStencilView(pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0u);
 }
 
-void Graphics::DrawTriangle(float rotX, float rotY, float msX, float msY, float msZ)
+void Graphics::DrawTriangle(float posX, float posY, float posZ, float rotX, float rotY)
 {
 	HRESULT hr;
 
@@ -251,11 +256,11 @@ void Graphics::DrawTriangle(float rotX, float rotY, float msX, float msY, float 
 	};
 	const ConstantBuffer constBuf =
 	{
-		DirectX::XMMatrixTranspose( 
-			DirectX::XMMatrixRotationY(rotY)*
+		DirectX::XMMatrixTranspose(
+			DirectX::XMMatrixRotationY(rotY) *
 			DirectX::XMMatrixRotationX(rotX) * 
 			DirectX::XMMatrixScaling(3.0f / 4.0f,1.0f,1.0f) *
-			DirectX::XMMatrixTranslation(msX, msY, msZ) *
+			DirectX::XMMatrixTranslation(posX, posY, posZ) *
 			DirectX::XMMatrixPerspectiveLH(1.0f,1.0f,0.5f,10.0f)
 		)
 	};

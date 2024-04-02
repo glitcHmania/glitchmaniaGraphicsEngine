@@ -24,38 +24,53 @@ int Application::Run()
 
 void Application::ComposeFrame()
 {
-	float rotAmount = 0.05f;
-	float movAmount = 0.1f;
-
-	if (window.kbd.KeyIsPressed(0x41))
+	// Move
+	if (window.kbd.KeyIsPressed('D'))
 	{
-		rotY += rotAmount;
+		posX += movAmount;
 	}
-	else if (window.kbd.KeyIsPressed(0x44))
+	else if (window.kbd.KeyIsPressed('A'))
 	{
-		rotY -= rotAmount;
+		posX -= movAmount;
 	}
-	if (window.kbd.KeyIsPressed(0x57))
+	if (window.kbd.KeyIsPressed('W'))
 	{
-		rotX += rotAmount;
+		posY += movAmount;
 	}
-	else if (window.kbd.KeyIsPressed(0x53))
+	else if (window.kbd.KeyIsPressed('S'))
 	{
-		rotX -= rotAmount;
+		posY -= movAmount;
 	}
 
+	// Rotate
 	auto msEvent = window.mouse.Read().GetType();
-	if (msEvent == Mouse::Event::Type::WheelDown)
+	if (!dragFlag && window.mouse.LeftIsPressed())
 	{
-		posZ -= movAmount;
+		inPosX = window.mouse.GetPosX();
+		inPosY = window.mouse.GetPosY();
+		inRotX = rotX;
+		inRotY = rotY;
+		dragFlag = true;
 	}
-	else if (msEvent == Mouse::Event::Type::WheelUp)
+	else if (dragFlag && msEvent == Mouse::Event::Type::Move)
+	{
+		rotX = inRotX + (inPosY - window.mouse.GetPosY()) * rotMultiplier / 300.0f;
+		rotY = inRotY + (inPosX - window.mouse.GetPosX()) * rotMultiplier / 400.0f;
+		dragFlag = false;
+	}
+
+	// Zoom-In & Zoom-Out
+	if (msEvent == Mouse::Event::Type::WheelDown)
 	{
 		posZ += movAmount;
 	}
+	else if (msEvent == Mouse::Event::Type::WheelUp)
+	{
+		posZ -= movAmount;
+	}
 
 	const float c = std::sin(timer.Peek()) /2.0f ;
-	window.Gfx().ClearBuffer(0.0f, 0.0f, 0.0f);
-	window.Gfx().DrawTriangle(rotX, rotY, window.mouse.GetPosX() / 400.0f - 1, window.mouse.GetPosY() / -300.0f +1, posZ);
+	window.Gfx().ClearBuffer(0.2f, 0.6f, 1.0f);
+	window.Gfx().DrawTriangle(posX,posY,posZ,rotX,rotY);
 	window.Gfx().EndFrame();
 }
