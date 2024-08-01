@@ -1,28 +1,14 @@
 #include "Graphics.h"
 #include <sstream>
 #include "Window.h"
-#include "dxerr.h"
+#include "GraphicsExceptionMacros.h"
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "D3DCompiler.lib")
 namespace wrl = Microsoft::WRL;
 
-//graphics exception macros
-#define GFX_EXCEPT_NOINFO(hrcall) Graphics::HrException(__LINE__,__FILE__,(hrcall))
-#define GFX_THROW_NOINFO(hrcall) if( FAILED(hr = (hrcall)) ) throw GFX_EXCEPT_NOINFO(hr)
 
-//graphics exception macros with dxgi info manager
-#if !defined NDEBUG
-#define GFX_EXCEPT(hrcall) Graphics::HrException(__LINE__,__FILE__,(hrcall),infoManager.GetMessages())
-#define GFX_THROW_INFO(hrcall) infoManager.Set(); if( FAILED(hr = (hrcall)) ) throw GFX_EXCEPT(hr)
-#define GFX_THROW_ONLY_INFO(call) infoManager.Set(); (call); auto msgs = infoManager.GetMessages(); if(!msgs.empty()) {throw Graphics::OnlyInfoException(__LINE__,__FILE__,msgs);}
-#define GFX_DEVICE_REMOVED_EXCEPT(hrcall) Graphics::DeviceRemovedException(__LINE__,__FILE__,(hrcall),infoManager.GetMessages())
-#else // release mode exception macros
-#define GFX_EXCEPT(hrcall) Graphics::HrException(__LINE__,__FILE__,(hrcall))
-#define GFX_THROW_INFO(hrcall) GFX_THROW_NOINFO(hrcall)
-#define GFX_DEVICE_REMOVED_EXCEPT(hrcall) Graphics::DeviceRemovedException(__LINE__,__FILE__,(hrcall))
-#endif
 
 
 
@@ -44,7 +30,7 @@ Graphics::Graphics(HWND hWnd)
 	swapChainDesc.SampleDesc.Quality = 0; 
 	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	swapChainDesc.BufferCount = 1; // one back buffer
-	swapChainDesc.OutputWindow = hWnd;
+	swapChainDesc.OutputWindow = (HWND)6969; //hWnd;
 	swapChainDesc.Windowed = TRUE; // windowed mode
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD; 
 	swapChainDesc.Flags = 0;
@@ -399,7 +385,6 @@ const char* Graphics::HrException::what() const noexcept
 	oss << GetType() << std::endl
 		<< "[Error Code] 0x" << std::hex << std::uppercase << GetErrorCode()
 		<< std::dec << " (" << (unsigned long)GetErrorCode() << ")" << std::endl
-		<< "[Error String] " << GetErrorString() << std::endl
 		<< "[Description] " << GetErrorDescription() << std::endl;
 	if (!info.empty())
 	{
@@ -418,11 +403,6 @@ const char* Graphics::HrException::GetType() const noexcept
 HRESULT Graphics::HrException::GetErrorCode() const noexcept
 {
 	return hr;
-}
-
-std::string Graphics::HrException::GetErrorString() const noexcept
-{
-	return DXGetErrorString(hr);
 }
 
 std::string Graphics::HrException::GetErrorDescription() const noexcept

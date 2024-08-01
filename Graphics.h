@@ -6,6 +6,7 @@
 #include <vector>
 #include "DxgiInfoManager.h"
 
+
 class Graphics
 {
 public:
@@ -20,7 +21,6 @@ public:
 		const char* what() const noexcept override;
 		const char* GetType() const noexcept override;
 		HRESULT GetErrorCode() const noexcept;
-		std::string GetErrorString() const noexcept;
 		std::string GetErrorDescription() const noexcept;
 		std::string GetErrorInfo() const noexcept;
 	private:

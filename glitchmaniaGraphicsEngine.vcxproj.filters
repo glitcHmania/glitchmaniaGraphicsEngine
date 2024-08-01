@@ -13,11 +13,11 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="DxErr">
-      <UniqueIdentifier>{b4d2b8cc-2add-4759-bc35-5902770d65ab}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Shaders">
       <UniqueIdentifier>{76d6627d-58b1-42b4-9e64-5c11a4d476bb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Macros">
+      <UniqueIdentifier>{bdfd3b45-a719-4b36-97c9-762070a69e47}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -51,14 +51,8 @@
     <ClCompile Include="DxgiInfoManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="dxerr.cpp">
-      <Filter>DxErr</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="WindowsMessageMap.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="NonMacroWin.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -89,8 +83,14 @@
     <ClInclude Include="DxgiInfoManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="dxerr.h">
-      <Filter>DxErr</Filter>
+    <ClInclude Include="GraphicsExceptionMacros.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowsMessageMap.h">
+      <Filter>Macros</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowsExceptionMacros.h">
+      <Filter>Macros</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -105,17 +105,6 @@
     <Image Include="glitch32.ico">
       <Filter>Resource Files</Filter>
     </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="DXGetErrorDescription.inl">
-      <Filter>DxErr</Filter>
-    </None>
-    <None Include="DXGetErrorString.inl">
-      <Filter>DxErr</Filter>
-    </None>
-    <None Include="DXTrace.inl">
-      <Filter>DxErr</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="VertexShader.hlsl">

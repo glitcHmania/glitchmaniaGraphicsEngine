@@ -138,7 +138,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
-    <ClCompile Include="dxerr.cpp" />
     <ClCompile Include="DxgiInfoManager.cpp" />
     <ClCompile Include="GGException.cpp" />
     <ClCompile Include="GGTimer.cpp" />
@@ -151,15 +150,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
-    <ClInclude Include="dxerr.h" />
     <ClInclude Include="DxgiInfoManager.h" />
     <ClInclude Include="GGException.h" />
     <ClInclude Include="GGTimer.h" />
     <ClInclude Include="Graphics.h" />
+    <ClInclude Include="GraphicsExceptionMacros.h" />
     <ClInclude Include="Keyboard.h" />
     <ClInclude Include="Mouse.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Window.h" />
+    <ClInclude Include="WindowsExceptionMacros.h" />
     <ClInclude Include="WindowsMessageMap.h" />
     <ClInclude Include="NonMacroWin.h" />
   </ItemGroup>
@@ -169,11 +169,6 @@
   <ItemGroup>
     <Image Include="glitch16.ico" />
     <Image Include="glitch32.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="DXGetErrorDescription.inl" />
-    <None Include="DXGetErrorString.inl" />
-    <None Include="DXTrace.inl" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="PixelShader.hlsl">
